@@ -321,36 +321,27 @@ public class PretController {
         return Math.abs(start.toLocalDate().toEpochDay() - end.toLocalDate().toEpochDay());
     }
 
+    @Scheduled(cron = "0 0 8 * * ?")
+    public void checkOverduePrets() {
+        List<Pret> overduePrets = pretRepository.findAll().stream()
+                .filter(pret -> pret.getDaterendu().isBefore(LocalDateTime.now()))
+                .collect(Collectors.toList());
+    }
+
     @GetMapping("/retardataire")
-    public String showOverduePrets(Model model,
-                                   @RequestParam(name = "message", required = false) String message) {
+    public String showOverduePrets(Model model) {
         model.addAttribute("header", "Prêts en Retard");
 
-        LocalDateTime now = LocalDateTime.now();
-        List<Pret> overduePrets = pretRepository.findOverduePretsNotReturned(now);
-
-        overduePrets.forEach(pret -> {
-            Rendre rendu = new Rendre();
-            rendu.setMembre(pret.getMembre());
-            rendu.setLivre(pret.getLivre());
-            rendu.setDaterendu(now);
-
-            pret.setDaterendu(now);
-            pret.setRendre(rendu);
-            rendu.setPret(pret);
-
-            pretRepository.save(pret);
-        });
+        List<Pret> overduePrets = pretRepository.findAll().stream()
+                .filter(pret -> pret.getDaterendu().isBefore(LocalDateTime.now()))
+                .sorted(Comparator.comparing(Pret::getDaterendu))
+                .collect(Collectors.toList());
 
         List<PretView> overduePretsView = overduePrets.stream().map(this::convertToPretView).collect(Collectors.toList());
 
         model.addAttribute("prets", overduePretsView);
         model.addAttribute("content", "/WEB-INF/jsp/pret/retardataire.jsp");
-        if (message != null) {
-            model.addAttribute("message", message);
-        }
         return "layout/main";
     }
-
 
 }

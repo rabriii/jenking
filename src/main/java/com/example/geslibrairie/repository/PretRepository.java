@@ -13,6 +13,6 @@ import org.springframework.data.repository.query.Param;
 public interface PretRepository extends JpaRepository<Pret, Long> {
     @Query("SELECT p FROM Pret p " +
             "WHERE p.daterendu < :currentDate " +
-            "AND NOT EXISTS (SELECT r FROM Rendre r WHERE r.pret = p)")
+            "AND p.idpret NOT IN (SELECT r.pret.idpret FROM Rendre r)")
     List<Pret> findOverduePretsNotReturned(@Param("currentDate") LocalDateTime currentDate);
 }
